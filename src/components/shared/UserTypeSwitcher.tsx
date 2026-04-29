@@ -10,7 +10,10 @@ export function UserTypeSwitcher() {
     if (!user) return null;
 
     const handleSwitch = (type: UserType) => {
-        login(localStorage.getItem("token") || "demo-token", user, type);
+        const token = localStorage.getItem("token");
+        if (token && user) {
+            login(token, user, type);
+        }
     };
 
     return (

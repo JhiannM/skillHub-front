@@ -2,11 +2,18 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
-import { Eye, EyeOff, Lock, Mail, Shield, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Shield, ArrowRight, AlertCircle } from "lucide-react";
+import { useUser, UserType } from "../../../contexts/UserContext";
+import api from "../../../lib/axios";
 
 export default function LoginPage() {
+    const router = useRouter();
+    const { login } = useUser();
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: "",
@@ -14,9 +21,28 @@ export default function LoginPage() {
     });
     const [rememberMe, setRememberMe] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Login:", formData, rememberMe);
+        setIsLoading(true);
+        setError("");
+        
+        try {
+            const response = await api.post("/auth/login", formData);
+            
+            if (response.data.success && response.data.data) {
+                const { token, user } = response.data.data;
+                const userType: UserType = user.role === "PROVIDER" ? "freelancer" : "client";
+                
+                login(token, { id: user.id || "1", name: user.name, email: user.email }, userType);
+                
+                // Redirigir al usuario según su rol o a la página principal
+                router.push(userType === "freelancer" ? "/provider-settings" : "/search");
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Ocurrió un error al iniciar sesión. Verifica tus credenciales.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -184,6 +210,13 @@ export default function LoginPage() {
                                     </p>
                                 </div>
 
+                                {error && (
+                                    <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl">
+                                        <AlertCircle size={16} />
+                                        <p>{error}</p>
+                                    </div>
+                                )}
+
                                 {/* Form Fields */}
                                 <div className="space-y-4">
                                     <Input
@@ -300,9 +333,10 @@ export default function LoginPage() {
                                     color="primary"
                                     size="lg"
                                     className="w-full"
+                                    disabled={isLoading}
                                 >
-                                    <span>Ingresar</span>
-                                    <ArrowRight size={20} className="ml-2" />
+                                    <span>{isLoading ? "Ingresando..." : "Ingresar"}</span>
+                                    {!isLoading && <ArrowRight size={20} className="ml-2" />}
                                 </Button>
 
                                 {/* Divider */}

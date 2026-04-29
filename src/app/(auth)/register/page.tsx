@@ -2,14 +2,19 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
 import { SegmentedControl } from "../../../components/ui/SegmentedControl";
-import { Eye, EyeOff, Shield, Briefcase, Search } from "lucide-react";
+import { Eye, EyeOff, Shield, Briefcase, Search, AlertCircle } from "lucide-react";
+import api from "../../../lib/axios";
 
 export default function RegisterPage() {
+    const router = useRouter();
     const [userType, setUserType] = useState("freelancer");
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState("");
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -27,9 +32,28 @@ export default function RegisterPage() {
 
     const passwordStrength = getPasswordStrength(formData.password);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Register:", formData, userType);
+        setIsLoading(true);
+        setError("");
+
+        try {
+            const payload = {
+                ...formData,
+                role: userType === "freelancer" ? "PROVIDER" : "CUSTOMER",
+            };
+            
+            const response = await api.post("/auth/register", payload);
+            
+            if (response.data.success) {
+                // Registro exitoso, redirigimos al login para que inicie sesión
+                router.push("/login");
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Ocurrió un error al registrar el usuario. Intenta nuevamente.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -64,6 +88,13 @@ export default function RegisterPage() {
                                 Únete a la comunidad de profesionales
                             </p>
                         </div>
+
+                        {error && (
+                            <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl">
+                                <AlertCircle size={16} />
+                                <p>{error}</p>
+                            </div>
+                        )}
 
                         {/* Role Selector */}
                         <div>
@@ -200,8 +231,9 @@ export default function RegisterPage() {
                             color="primary"
                             size="lg"
                             fullWidth
+                            disabled={isLoading}
                         >
-                            Crear mi cuenta
+                            {isLoading ? "Creando cuenta..." : "Crear mi cuenta"}
                         </Button>
 
                         {/* Terms */}

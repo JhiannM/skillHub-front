@@ -21,16 +21,7 @@ import {
 export default function ProviderSettingsPage() {
     const { isAuthenticated, login } = useUser();
 
-    // Auto-login as freelancer for demo
-    React.useEffect(() => {
-        if (!isAuthenticated) {
-            login(
-                "demo-token",
-                { id: "1", name: "Demo User", email: "demo@skillhub.co" },
-                "freelancer"
-            );
-        }
-    }, [isAuthenticated, login]);
+
 
     // Profile Information
     const [bio, setBio] = useState(
