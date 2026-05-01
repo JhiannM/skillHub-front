@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../components/ui/Button";
 import { UserTypeSwitcher } from "../../components/shared/UserTypeSwitcher";
 import { useUser } from "../../contexts/UserContext";
+import api from "../../lib/axios";
 import {
     DollarSign,
     Calendar,
@@ -20,39 +21,65 @@ import {
 
 export default function ProviderSettingsPage() {
     const { isAuthenticated, login } = useUser();
-
-
-
-    // Profile Information
-    const [bio, setBio] = useState(
-        "Desarrolladora web con más de 5 años de experiencia creando aplicaciones modernas y escalables."
-    );
-    const [skills, setSkills] = useState<string[]>([
-        "React",
-        "Node.js",
-        "TypeScript",
-        "PostgreSQL",
-    ]);
+    const [isLoading, setIsLoading] = useState(true); // Profile Information
+    const [bio, setBio] = useState("");
+    const [phone, setPhone] = useState("");
+    const [city, setCity] = useState("");
+    const [skills, setSkills] = useState<string[]>([]);
     const [newSkill, setNewSkill] = useState("");
-    const [category, setCategory] = useState("tecnologia");
-    const [serviceDescription, setServiceDescription] = useState(
-        "Desarrollo de aplicaciones web, sitios corporativos, e-commerce y sistemas a medida."
-    );
-    const [experience, setExperience] = useState("5");
+    const [category, setCategory] = useState("TECNOLOGIA");
+    const [serviceDescription, setServiceDescription] = useState("");
+    const [experience, setExperience] = useState("0");
 
     // Pricing and Schedule
-    const [hourlyRate, setHourlyRate] = useState("50000");
+    const [hourlyRate, setHourlyRate] = useState("0");
     const [workDays, setWorkDays] = useState({
-        lunes: { enabled: true, start: "09:00", end: "18:00" },
-        martes: { enabled: true, start: "09:00", end: "18:00" },
-        miercoles: { enabled: true, start: "09:00", end: "18:00" },
-        jueves: { enabled: true, start: "09:00", end: "18:00" },
-        viernes: { enabled: true, start: "09:00", end: "15:00" },
-        sabado: { enabled: false, start: "09:00", end: "13:00" },
-        domingo: { enabled: false, start: "09:00", end: "13:00" },
+        Lunes: { enabled: true, inicio: "09:00", fin: "18:00" },
+        Martes: { enabled: true, inicio: "09:00", fin: "18:00" },
+        Miercoles: { enabled: true, inicio: "09:00", fin: "18:00" },
+        Jueves: { enabled: true, inicio: "09:00", fin: "18:00" },
+        Viernes: { enabled: true, inicio: "09:00", fin: "15:00" },
+        Sabado: { enabled: false, inicio: "09:00", fin: "13:00" },
+        Domingo: { enabled: false, inicio: "09:00", fin: "13:00" },
     });
 
     const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data } = await api.get("/providers/me/profile");
+                if (data.success && data.data) {
+                    const profile = data.data;
+                    if (profile.bio) setBio(profile.bio);
+                    if (profile.phone) setPhone(profile.phone);
+                    if (profile.city) setCity(profile.city);
+                    if (profile.skills) setSkills(profile.skills);
+                    if (profile.main_category)
+                        setCategory(profile.main_category);
+                    if (profile.service_description)
+                        setServiceDescription(profile.service_description);
+                    if (profile.years_experience !== undefined)
+                        setExperience(profile.years_experience.toString());
+                    if (profile.base_price)
+                        setHourlyRate(
+                            parseFloat(profile.base_price).toString()
+                        );
+                    if (
+                        profile.schedule &&
+                        Object.keys(profile.schedule).length > 0
+                    ) {
+                        setWorkDays(profile.schedule as any);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching profile", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     const toggleDay = (day: string) => {
         setWorkDays((prev) => ({
@@ -66,7 +93,7 @@ export default function ProviderSettingsPage() {
 
     const updateDayTime = (
         day: string,
-        field: "start" | "end",
+        field: "inicio" | "fin",
         value: string
     ) => {
         setWorkDays((prev) => ({
@@ -86,29 +113,35 @@ export default function ProviderSettingsPage() {
         setSkills(skills.filter((skill) => skill !== skillToRemove));
     };
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving settings:", {
-            bio,
-            skills,
-            category,
-            serviceDescription,
-            experience,
-            hourlyRate,
-            workDays,
-        });
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        try {
+            await api.patch("/providers/me/profile", {
+                bio,
+                phone,
+                city,
+                skills,
+                basePrice: parseFloat(hourlyRate) || 0,
+                mainCategory: category,
+                serviceDescription,
+                yearsExperience: parseInt(experience) || 0,
+                schedule: workDays,
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (error) {
+            console.error("Error updating profile", error);
+        }
     };
 
     const daysOfWeek = [
-        { key: "lunes", label: "Lunes" },
-        { key: "martes", label: "Martes" },
-        { key: "miercoles", label: "Miércoles" },
-        { key: "jueves", label: "Jueves" },
-        { key: "viernes", label: "Viernes" },
-        { key: "sabado", label: "Sábado" },
-        { key: "domingo", label: "Domingo" },
+        { key: "Lunes", label: "Lunes" },
+        { key: "Martes", label: "Martes" },
+        { key: "Miercoles", label: "Miércoles" },
+        { key: "Jueves", label: "Jueves" },
+        { key: "Viernes", label: "Viernes" },
+        { key: "Sabado", label: "Sábado" },
+        { key: "Domingo", label: "Domingo" },
     ];
 
     const enabledDays = Object.entries(workDays).filter(
@@ -118,24 +151,37 @@ export default function ProviderSettingsPage() {
     // Calculate profile completion
     const calculateProfileCompletion = () => {
         let completed = 0;
-        const total = 6;
+        const total = 8;
 
-        if (bio.length >= 50) completed++;
-        if (skills.length >= 3) completed++;
+        if (phone && phone.trim().length > 0) completed++;
+        if (city && city.trim().length > 0) completed++;
+        if (bio && bio.trim().length > 0) completed++;
+        if (skills && skills.length > 0) completed++;
         if (category) completed++;
-        if (serviceDescription.length >= 30) completed++;
-        if (experience && parseInt(experience) > 0) completed++;
-        if (hourlyRate && parseInt(hourlyRate) >= 10000) completed++;
+        if (serviceDescription && serviceDescription.trim().length > 0)
+            completed++;
+        if (experience !== undefined && experience.toString().trim() !== "")
+            completed++;
+        if (hourlyRate !== undefined && hourlyRate.toString().trim() !== "")
+            completed++;
 
         return Math.round((completed / total) * 100);
     };
 
     const profileCompletion = calculateProfileCompletion();
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-primary font-bold animate-pulse">
+                    Cargando perfil...
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-background">
-            <UserTypeSwitcher />
-
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Header */}
                 <div className="mb-8">
@@ -197,6 +243,45 @@ export default function ProviderSettingsPage() {
                             Información del Perfil
                         </h2>
                         <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-foreground mb-2">
+                                        Teléfono{" "}
+                                        <span className="text-destructive">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) =>
+                                            setPhone(e.target.value)
+                                        }
+                                        placeholder="Ej: 3001234567"
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-input bg-background text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 transition-all outline-none"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-foreground mb-2">
+                                        Ciudad{" "}
+                                        <span className="text-destructive">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={city}
+                                        onChange={(e) =>
+                                            setCity(e.target.value)
+                                        }
+                                        placeholder="Ej: Bogotá"
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-input bg-background text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 transition-all outline-none"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-foreground mb-2">
                                     Biografía Profesional{" "}
@@ -232,21 +317,33 @@ export default function ProviderSettingsPage() {
                                         className="w-full px-4 py-3 rounded-xl border-2 border-input bg-background text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 transition-all outline-none"
                                         required
                                     >
-                                        <option value="tecnologia">
+                                        <option value="TECNOLOGIA">
                                             Tecnología
                                         </option>
-                                        <option value="hogar">Hogar</option>
-                                        <option value="educacion">
-                                            Educación
-                                        </option>
-                                        <option value="salud">
+                                        <option value="HOGAR">Hogar</option>
+                                        <option value="SALUD">
                                             Salud y Bienestar
                                         </option>
-                                        <option value="eventos">Eventos</option>
-                                        <option value="transporte">
+                                        <option value="EDUCACION">
+                                            Educación
+                                        </option>
+                                        <option value="MECANICA">
+                                            Mecánica
+                                        </option>
+                                        <option value="CONSTRUCCION">
+                                            Construcción
+                                        </option>
+                                        <option value="FONTANERIA">
+                                            Fontanería
+                                        </option>
+                                        <option value="MANUFACTURA">
+                                            Manufactura
+                                        </option>
+                                        <option value="EVENTOS">Eventos</option>
+                                        <option value="TRANSPORTE">
                                             Transporte
                                         </option>
-                                        <option value="creatividad">
+                                        <option value="CREATIVIDAD">
                                             Creatividad
                                         </option>
                                     </select>
@@ -521,12 +618,12 @@ export default function ProviderSettingsPage() {
                                                         <input
                                                             type="time"
                                                             value={
-                                                                dayData.start
+                                                                dayData.inicio
                                                             }
                                                             onChange={(e) =>
                                                                 updateDayTime(
                                                                     key,
-                                                                    "start",
+                                                                    "inicio",
                                                                     e.target
                                                                         .value
                                                                 )
@@ -543,11 +640,11 @@ export default function ProviderSettingsPage() {
                                                         </label>
                                                         <input
                                                             type="time"
-                                                            value={dayData.end}
+                                                            value={dayData.fin}
                                                             onChange={(e) =>
                                                                 updateDayTime(
                                                                     key,
-                                                                    "end",
+                                                                    "fin",
                                                                     e.target
                                                                         .value
                                                                 )
