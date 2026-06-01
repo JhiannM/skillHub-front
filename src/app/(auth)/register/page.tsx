@@ -9,6 +9,14 @@ import { SegmentedControl } from "../../../components/ui/SegmentedControl";
 import { Eye, EyeOff, Shield, Briefcase, Search, AlertCircle } from "lucide-react";
 import api from "../../../lib/axios";
 
+type ApiError = {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+};
+
 export default function RegisterPage() {
     const router = useRouter();
     const [userType, setUserType] = useState("freelancer");
@@ -49,8 +57,9 @@ export default function RegisterPage() {
                 // Registro exitoso, redirigimos al login para que inicie sesión
                 router.push("/login");
             }
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Ocurrió un error al registrar el usuario. Intenta nuevamente.");
+        } catch (err: unknown) {
+            const apiError = err as ApiError;
+            setError(apiError.response?.data?.message || "Ocurrió un error al registrar el usuario. Intenta nuevamente.");
         } finally {
             setIsLoading(false);
         }

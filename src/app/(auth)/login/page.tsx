@@ -9,6 +9,14 @@ import { Eye, EyeOff, Lock, Mail, Shield, ArrowRight, AlertCircle } from "lucide
 import { useUser, UserType } from "../../../contexts/UserContext";
 import api from "../../../lib/axios";
 
+type ApiError = {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+};
+
 export default function LoginPage() {
     const router = useRouter();
     const { login } = useUser();
@@ -38,8 +46,9 @@ export default function LoginPage() {
                 // Redirigir al usuario según su rol o a la página principal
                 router.push(userType === "freelancer" ? "/provider-settings" : "/search");
             }
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Ocurrió un error al iniciar sesión. Verifica tus credenciales.");
+        } catch (err: unknown) {
+            const apiError = err as ApiError;
+            setError(apiError.response?.data?.message || "Ocurrió un error al iniciar sesión. Verifica tus credenciales.");
         } finally {
             setIsLoading(false);
         }

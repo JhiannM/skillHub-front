@@ -33,14 +33,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const storedType = localStorage.getItem("userType");
 
         if (token && storedUser && storedType) {
-            setUser(JSON.parse(storedUser));
-            setUserType(storedType as UserType);
-            setIsAuthenticated(true);
-            
-            // Asegurarnos de que la cookie exista si viene del localStorage (migración de estado)
-            if (!Cookies.get("auth-token")) {
-                 Cookies.set("auth-token", token, { expires: 7 }); // 7 días
-            }
+            window.setTimeout(() => {
+                setUser(JSON.parse(storedUser));
+                setUserType(storedType as UserType);
+                setIsAuthenticated(true);
+
+                // Asegurarnos de que la cookie exista si viene del localStorage (migración de estado)
+                if (!Cookies.get("auth-token")) {
+                    Cookies.set("auth-token", token, { expires: 7 }); // 7 días
+                }
+            }, 0);
         } else {
             // Si falta alguno, limpiamos todo para evitar estados inconsistentes
             Cookies.remove("auth-token");
