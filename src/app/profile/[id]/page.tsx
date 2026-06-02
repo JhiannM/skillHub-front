@@ -24,8 +24,33 @@ import {
     Clock,
 } from "lucide-react";
 
+interface AvailabilitySlot {
+    day: string;
+    dayShort: string;
+    available: boolean;
+    hours?: string;
+}
+
+interface FreelancerData {
+    name: string;
+    avatar?: string;
+    location: string;
+    category: string;
+    categoryLabel: string;
+    verified: boolean;
+    servicesCompleted: number;
+    rating: number;
+    reviews: number;
+    hourlyRate: string;
+    bio: string;
+    skills: string[];
+    availability: AvailabilitySlot[];
+    responseTime?: string;
+    completionRate?: string;
+}
+
 // Mock data for public/search providers
-const mockFreelancers: Record<string, any> = {
+const mockFreelancers: Record<string, FreelancerData> = {
     demo: {
         name: "María González Pérez",
         avatar: "",
@@ -209,7 +234,7 @@ const mockFreelancers: Record<string, any> = {
 export default function FreelancerProfile() {
     const { id } = useParams();
     const { user, userType, isAuthenticated } = useUser();
-    const [freelancer, setFreelancer] = useState<any>(null);
+    const [freelancer, setFreelancer] = useState<FreelancerData | null>(null);
     const [loading, setLoading] = useState(true);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
 
@@ -262,7 +287,10 @@ export default function FreelancerProfile() {
                 }
 
                 if (profileData) {
-                    const scheduleMap: Record<string, any> =
+                    const scheduleMap: Record<
+                        string,
+                        { enabled?: boolean; inicio?: string; fin?: string }
+                    > =
                         profileData.schedule || {};
                     const dayShorts: Record<string, string> = {
                         Lunes: "L",

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Navbar } from "../../../components/shared/Navbar";
 import { Button } from "../../../components/ui/Button";
 import { Avatar } from "../../../components/ui/Avatar";
 import { useUser } from "../../../contexts/UserContext";
@@ -12,7 +11,6 @@ import {
     Clock,
     MapPin,
     Monitor,
-    DollarSign,
     FileText,
     Send,
     AlertCircle,

@@ -12,7 +12,6 @@ import {
     User,
     Settings,
     LogOut,
-    Menu,
 } from "lucide-react";
 
 export function Navbar() {

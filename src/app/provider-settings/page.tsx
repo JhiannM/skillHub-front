@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "../../components/ui/Button";
-import { UserTypeSwitcher } from "../../components/shared/UserTypeSwitcher";
-import { useUser } from "../../contexts/UserContext";
 import api from "../../lib/axios";
 import {
     DollarSign,
@@ -20,7 +18,6 @@ import {
 } from "lucide-react";
 
 export default function ProviderSettingsPage() {
-    const { isAuthenticated, login } = useUser();
     const [isLoading, setIsLoading] = useState(true); // Profile Information
     const [bio, setBio] = useState("");
     const [phone, setPhone] = useState("");
@@ -69,7 +66,7 @@ export default function ProviderSettingsPage() {
                         profile.schedule &&
                         Object.keys(profile.schedule).length > 0
                     ) {
-                        setWorkDays(profile.schedule as any);
+                        setWorkDays(profile.schedule as typeof workDays);
                     }
                 }
             } catch (error) {
@@ -145,7 +142,7 @@ export default function ProviderSettingsPage() {
     ];
 
     const enabledDays = Object.entries(workDays).filter(
-        ([_, data]) => data.enabled
+        ([, data]) => data.enabled
     ).length;
 
     // Calculate profile completion

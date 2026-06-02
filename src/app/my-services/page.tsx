@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import { Navbar } from "../../components/shared/Navbar";
 import { ServiceCard } from "../../components/modules/ServiceCard";
 import { Button } from "../../components/ui/Button";
 import { useUser } from "../../contexts/UserContext";
@@ -301,7 +300,7 @@ export default function MyServicesPage() {
                         <select
                             value={filterStatus}
                             onChange={(e) =>
-                                setFilterStatus(e.target.value as any)
+                                setFilterStatus(e.target.value as "all" | ServiceStatus)
                             }
                             className="px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 transition-all outline-none"
                         >

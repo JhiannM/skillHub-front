@@ -39,6 +39,17 @@ const CATEGORY_LABELS: Record<string, string> = {
     CREATIVIDAD: "Creatividad",
 };
 
+interface SearchProvider {
+    user_id: string;
+    name: string;
+    main_category?: string;
+    base_price?: string;
+    skills?: string[];
+    profile_completion?: number;
+    bio?: string;
+    services_done?: number;
+}
+
 export default function SearchPage() {
     // Inputs & Filters State
     const [searchInput, setSearchInput] = useState("");
@@ -49,7 +60,7 @@ export default function SearchPage() {
     const [priceMax, setPriceMax] = useState("");
 
     // API Data State
-    const [providers, setProviders] = useState<any[]>([]);
+    const [providers, setProviders] = useState<SearchProvider[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [page, setPage] = useState(1);
@@ -71,7 +82,7 @@ export default function SearchPage() {
                 setLoading(true);
             }
 
-            const params: Record<string, any> = {
+            const params: Record<string, string | number> = {
                 page: currentPage,
                 limit: 12,
             };
@@ -117,23 +128,26 @@ export default function SearchPage() {
 
     // Initial fetch and trigger fetch on filter changes
     useEffect(() => {
-        setPage(1);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchProviders(1, activeKeyword, selectedCategory, priceMin, priceMax, false);
     }, [activeKeyword, selectedCategory, priceMin, priceMax, fetchProviders]);
 
     const handleSearchSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         setActiveKeyword(searchInput);
+        setPage(1);
     };
 
     const handleClearSearch = () => {
         setSearchInput("");
         setActiveKeyword("");
+        setPage(1);
     };
 
     const handleApplyFilters = (filters: FilterValues) => {
         setPriceMin(filters.priceMin);
         setPriceMax(filters.priceMax);
+        setPage(1);
     };
 
     const handleLoadMore = () => {
@@ -148,6 +162,7 @@ export default function SearchPage() {
         setSelectedCategory(null);
         setPriceMin("");
         setPriceMax("");
+        setPage(1);
     };
 
     const hasActiveFilters =
@@ -206,10 +221,14 @@ export default function SearchPage() {
                                     key={catKey}
                                     label={CATEGORY_LABELS[catKey] || catKey}
                                     active={isSelected}
-                                    onClick={() =>
-                                        setSelectedCategory(isSelected ? null : catKey)
-                                    }
-                                    onRemove={() => setSelectedCategory(null)}
+                                    onClick={() => {
+                                        setSelectedCategory(isSelected ? null : catKey);
+                                        setPage(1);
+                                    }}
+                                    onRemove={() => {
+                                        setSelectedCategory(null);
+                                        setPage(1);
+                                    }}
                                 />
                             );
                         })}
