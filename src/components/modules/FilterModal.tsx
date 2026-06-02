@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { Button } from "../ui/Button";
-import { X, DollarSign, MapPin } from "lucide-react";
+import { X, DollarSign } from "lucide-react";
 
 export interface FilterValues {
     priceMin: string;
     priceMax: string;
-    modality: string[];
 }
 
 export interface FilterModalProps {
@@ -17,27 +16,17 @@ export interface FilterModalProps {
 export function FilterModal({ isOpen, onClose, onApply }: FilterModalProps) {
     const [priceMin, setPriceMin] = useState("");
     const [priceMax, setPriceMax] = useState("");
-    const [modality, setModality] = useState<string[]>([]);
 
     if (!isOpen) return null;
 
-    const handleModalityToggle = (value: string) => {
-        setModality((prev) =>
-            prev.includes(value)
-                ? prev.filter((m) => m !== value)
-                : [...prev, value]
-        );
-    };
-
     const handleApply = () => {
-        onApply({ priceMin, priceMax, modality });
+        onApply({ priceMin, priceMax });
         onClose();
     };
 
     const handleClear = () => {
         setPriceMin("");
         setPriceMax("");
-        setModality([]);
     };
 
     return (
@@ -133,74 +122,6 @@ export function FilterModal({ isOpen, onClose, onApply }: FilterModalProps) {
                                 >
                                     {">"} 60k
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* Modality */}
-                        <div>
-                            <h3 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
-                                <MapPin size={18} className="text-primary" />
-                                Modalidad
-                            </h3>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-border bg-background hover:border-ring cursor-pointer transition-all">
-                                    <input
-                                        type="checkbox"
-                                        checked={modality.includes("domicilio")}
-                                        onChange={() =>
-                                            handleModalityToggle("domicilio")
-                                        }
-                                        className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-ring"
-                                    />
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">
-                                            A Domicilio
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            El profesional va hasta tu ubicación
-                                        </p>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-border bg-background hover:border-ring cursor-pointer transition-all">
-                                    <input
-                                        type="checkbox"
-                                        checked={modality.includes(
-                                            "punto-pactado"
-                                        )}
-                                        onChange={() =>
-                                            handleModalityToggle(
-                                                "punto-pactado"
-                                            )
-                                        }
-                                        className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-ring"
-                                    />
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">
-                                            Punto Pactado
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Acuerdan lugar de encuentro
-                                        </p>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-border bg-background hover:border-ring cursor-pointer transition-all">
-                                    <input
-                                        type="checkbox"
-                                        checked={modality.includes("remoto")}
-                                        onChange={() =>
-                                            handleModalityToggle("remoto")
-                                        }
-                                        className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-ring"
-                                    />
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">
-                                            Remoto
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Trabajo 100% virtual
-                                        </p>
-                                    </div>
-                                </label>
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "../../components/ui/Button";
 import { FilterChip } from "../../components/ui/FilterChip";
 import { FreelancerCard } from "../../components/modules/FreelancerCard";
@@ -9,150 +9,176 @@ import {
     FilterValues,
 } from "../../components/modules/FilterModal";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { CategoryType } from "../../components/ui/CategoryIcon";
+import api from "../../lib/axios";
+
+const VALID_CATEGORIES = [
+    "TECNOLOGIA",
+    "HOGAR",
+    "SALUD",
+    "EDUCACION",
+    "MECANICA",
+    "CONSTRUCCION",
+    "FONTANERIA",
+    "MANUFACTURA",
+    "EVENTOS",
+    "TRANSPORTE",
+    "CREATIVIDAD",
+];
+
+const CATEGORY_LABELS: Record<string, string> = {
+    TECNOLOGIA: "Tecnología",
+    HOGAR: "Hogar",
+    SALUD: "Salud y Bienestar",
+    EDUCACION: "Educación",
+    MECANICA: "Mecánica",
+    CONSTRUCCION: "Construcción",
+    FONTANERIA: "Fontanería",
+    MANUFACTURA: "Manufactura",
+    EVENTOS: "Eventos",
+    TRANSPORTE: "Transporte",
+    CREATIVIDAD: "Creatividad",
+};
 
 export default function SearchPage() {
-    const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(
-        null
-    );
-    const [selectedCity, setSelectedCity] = useState<string | null>(null);
+    // Inputs & Filters State
+    const [searchInput, setSearchInput] = useState("");
+    const [activeKeyword, setActiveKeyword] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-    const [advancedFilters, setAdvancedFilters] = useState<FilterValues>({
-        priceMin: "",
-        priceMax: "",
-        modality: [],
-    });
+    const [priceMin, setPriceMin] = useState("");
+    const [priceMax, setPriceMax] = useState("");
 
-    const categories = [
-        { id: "tecnologia", label: "Tecnología" },
-        { id: "hogar", label: "Hogar" },
-        { id: "salud", label: "Salud" },
-        { id: "educacion", label: "Educación" },
-    ];
+    // API Data State
+    const [providers, setProviders] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
 
-    const cities = [
-        { id: "bogota", label: "Bogotá" },
-        { id: "medellin", label: "Medellín" },
-        { id: "cali", label: "Cali" },
-        { id: "barranquilla", label: "Barranquilla" },
-        { id: "mosquera", label: "Mosquera" },
-    ];
+    // Dynamic search and filter fetch logic
+    const fetchProviders = useCallback(async (
+        currentPage: number,
+        keyword: string,
+        category: string | null,
+        minP: string,
+        maxP: string,
+        append: boolean = false
+    ) => {
+        try {
+            if (append) {
+                setLoadingMore(true);
+            } else {
+                setLoading(true);
+            }
 
-    const freelancers = [
-        {
-            id: "1",
-            name: "María González",
-            location: "Bogotá, Colombia",
-            category: "tecnologia" as CategoryType,
-            rating: 4.9,
-            reviews: 127,
-            servicesCompleted: 145,
-            hourlyRate: "50,000",
-            skills: ["React", "Node.js", "TypeScript", "UI/UX"],
-            isTopTalent: true,
-            bio: "Desarrolladora web full-stack con 5+ años de experiencia. Especializada en aplicaciones modernas y escalables.",
-        },
-        {
-            id: "2",
-            name: "Carlos Ramírez",
-            location: "Medellín, Colombia",
-            category: "hogar" as CategoryType,
-            rating: 5.0,
-            reviews: 89,
-            servicesCompleted: 92,
-            hourlyRate: "35,000",
-            skills: ["Electricidad", "Instalaciones", "Reparaciones"],
-            isTopTalent: true,
-            bio: "Electricista certificado con 10 años de experiencia. Trabajo residencial y comercial.",
-        },
-        {
-            id: "3",
-            name: "Ana Martínez",
-            location: "Bogotá, Colombia",
-            category: "educacion" as CategoryType,
-            rating: 4.8,
-            reviews: 156,
-            servicesCompleted: 203,
-            hourlyRate: "40,000",
-            skills: ["Inglés", "TOEFL", "Business English"],
-            isTopTalent: true,
-            bio: "Profesora de inglés certificada. Clases personalizadas para todos los niveles.",
-        },
-        {
-            id: "4",
-            name: "Jorge López",
-            location: "Cali, Colombia",
-            category: "tecnologia" as CategoryType,
-            rating: 4.7,
-            reviews: 64,
-            servicesCompleted: 71,
-            hourlyRate: "45,000",
-            skills: ["Python", "Django", "PostgreSQL"],
-            isTopTalent: false,
-            bio: "Desarrollador backend especializado en APIs y sistemas robustos.",
-        },
-        {
-            id: "5",
-            name: "Laura Sánchez",
-            location: "Medellín, Colombia",
-            category: "salud" as CategoryType,
-            rating: 4.9,
-            reviews: 112,
-            servicesCompleted: 128,
-            hourlyRate: "60,000",
-            skills: ["Fisioterapia", "Rehabilitación", "Deportiva"],
-            isTopTalent: true,
-            bio: "Fisioterapeuta especializada en recuperación deportiva y lesiones.",
-        },
-        {
-            id: "6",
-            name: "Pedro Gómez",
-            location: "Bogotá, Colombia",
-            category: "hogar" as CategoryType,
-            rating: 4.6,
-            reviews: 43,
-            servicesCompleted: 47,
-            hourlyRate: "30,000",
-            skills: ["Plomería", "Instalaciones", "Mantenimiento"],
-            isTopTalent: false,
-            bio: "Plomero profesional con experiencia en residencias y edificios.",
-        },
-    ];
+            const params: Record<string, any> = {
+                page: currentPage,
+                limit: 12,
+            };
+
+            if (keyword.trim()) {
+                params.keyword = keyword.trim();
+            }
+            if (category) {
+                params.category = category;
+            }
+            if (minP) {
+                params.minPrice = Number(minP);
+            }
+            if (maxP) {
+                params.maxPrice = Number(maxP);
+            }
+
+            const { data } = await api.get("/providers/search", { params });
+
+            if (data.success && data.data) {
+                const newProviders = data.data.providers || [];
+                const limit = data.data.limit || 12;
+
+                setProviders(prev => append ? [...prev, ...newProviders] : newProviders);
+                setHasMore(newProviders.length >= limit);
+            } else {
+                if (!append) {
+                    setProviders([]);
+                }
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error("Error fetching providers from backend API", error);
+            if (!append) {
+                setProviders([]);
+            }
+            setHasMore(false);
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    }, []);
+
+    // Initial fetch and trigger fetch on filter changes
+    useEffect(() => {
+        setPage(1);
+        fetchProviders(1, activeKeyword, selectedCategory, priceMin, priceMax, false);
+    }, [activeKeyword, selectedCategory, priceMin, priceMax, fetchProviders]);
+
+    const handleSearchSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        setActiveKeyword(searchInput);
+    };
+
+    const handleClearSearch = () => {
+        setSearchInput("");
+        setActiveKeyword("");
+    };
 
     const handleApplyFilters = (filters: FilterValues) => {
-        setAdvancedFilters(filters);
+        setPriceMin(filters.priceMin);
+        setPriceMax(filters.priceMax);
+    };
+
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchProviders(nextPage, activeKeyword, selectedCategory, priceMin, priceMax, true);
+    };
+
+    const handleClearAllFilters = () => {
+        setSearchInput("");
+        setActiveKeyword("");
+        setSelectedCategory(null);
+        setPriceMin("");
+        setPriceMax("");
     };
 
     const hasActiveFilters =
+        activeKeyword ||
         selectedCategory ||
-        selectedCity ||
-        advancedFilters.priceMin ||
-        advancedFilters.priceMax ||
-        advancedFilters.modality.length > 0;
+        priceMin ||
+        priceMax;
 
     return (
-        <div className="bg-background">
+        <div className="bg-background min-h-screen pb-12">
             {/* Search Header */}
             <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-4">
                     {/* Search Bar */}
-                    <div className="flex gap-3 mb-4">
+                    <form onSubmit={handleSearchSubmit} className="flex gap-3 mb-4">
                         <div className="flex-1 relative">
                             <Search
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                                 size={20}
                             />
                             <input
                                 type="text"
-                                placeholder="Buscar por servicio o habilidad..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-10 py-3 rounded-xl border-2 border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 transition-all outline-none"
+                                placeholder="Buscar por nombre, biografía o habilidad..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="w-full pl-12 pr-10 py-3 rounded-xl border-2 border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 transition-all outline-none"
                             />
-                            {searchQuery && (
+                            {searchInput && (
                                 <button
-                                    onClick={() => setSearchQuery("")}
+                                    type="button"
+                                    onClick={handleClearSearch}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
                                     <X size={18} />
@@ -160,67 +186,46 @@ export default function SearchPage() {
                             )}
                         </div>
                         <Button
+                            type="submit"
                             variant="solid"
                             color="primary"
                             size="md"
-                            className="px-6"
+                            className="px-6 shadow-md"
                         >
                             <Search size={18} className="sm:mr-2" />
                             <span className="hidden sm:inline">Buscar</span>
                         </Button>
-                    </div>
+                    </form>
 
-                    {/* Filter Chips */}
-                    <div className="flex items-center gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                        {/* Categories */}
-                        {categories.map((cat) => (
-                            <FilterChip
-                                key={cat.id}
-                                label={cat.label}
-                                active={selectedCategory === cat.id}
-                                onClick={() =>
-                                    setSelectedCategory(
-                                        selectedCategory === cat.id
-                                            ? null
-                                            : cat.id
-                                    )
-                                }
-                                onRemove={() => setSelectedCategory(null)}
-                            />
-                        ))}
+                    {/* Category Chips - VALID_CATEGORIES */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                        {VALID_CATEGORIES.map((catKey) => {
+                            const isSelected = selectedCategory === catKey;
+                            return (
+                                <FilterChip
+                                    key={catKey}
+                                    label={CATEGORY_LABELS[catKey] || catKey}
+                                    active={isSelected}
+                                    onClick={() =>
+                                        setSelectedCategory(isSelected ? null : catKey)
+                                    }
+                                    onRemove={() => setSelectedCategory(null)}
+                                />
+                            );
+                        })}
 
-                        <div className="w-px h-6 bg-border mx-1" />
+                        <div className="w-px h-6 bg-border mx-1 shrink-0" />
 
-                        {/* Cities */}
-                        {cities.slice(0, 3).map((city) => (
-                            <FilterChip
-                                key={city.id}
-                                label={city.label}
-                                active={selectedCity === city.id}
-                                onClick={() =>
-                                    setSelectedCity(
-                                        selectedCity === city.id
-                                            ? null
-                                            : city.id
-                                    )
-                                }
-                                onRemove={() => setSelectedCity(null)}
-                            />
-                        ))}
-
-                        <div className="w-px h-6 bg-border mx-1" />
-
-                        {/* Advanced Filters Button */}
+                        {/* Advanced Filters Trigger */}
                         <button
+                            type="button"
                             onClick={() => setIsFilterModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-md transition-all"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm transition-all"
                         >
                             <SlidersHorizontal size={16} />
                             <span>Filtros</span>
-                            {(advancedFilters.priceMin ||
-                                advancedFilters.priceMax ||
-                                advancedFilters.modality.length > 0) && (
-                                <span className="w-2 h-2 bg-white rounded-full" />
+                            {(priceMin || priceMax) && (
+                                <span className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse" />
                             )}
                         </button>
                     </div>
@@ -233,29 +238,23 @@ export default function SearchPage() {
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h2 className="text-2xl font-bold text-foreground mb-1">
-                            {searchQuery
-                                ? `Resultados para "${searchQuery}"`
+                            {activeKeyword
+                                ? `Resultados para "${activeKeyword}"`
                                 : "Explora Profesionales"}
                         </h2>
-                        <p className="text-sm text-muted-foreground">
-                            {freelancers.length} profesionales disponibles
-                            {selectedCity &&
-                                ` en ${cities.find((c) => c.id === selectedCity)?.label}`}
-                        </p>
+                        {!loading && (
+                            <p className="text-sm text-muted-foreground">
+                                {providers.length} profesionales encontrados
+                                {selectedCategory && ` en ${CATEGORY_LABELS[selectedCategory]}`}
+                            </p>
+                        )}
                     </div>
 
                     {hasActiveFilters && (
                         <button
-                            onClick={() => {
-                                setSelectedCategory(null);
-                                setSelectedCity(null);
-                                setAdvancedFilters({
-                                    priceMin: "",
-                                    priceMax: "",
-                                    modality: [],
-                                });
-                            }}
-                            className="text-sm text-primary hover:underline flex items-center gap-1 font-medium"
+                            type="button"
+                            onClick={handleClearAllFilters}
+                            className="text-sm text-primary hover:underline flex items-center gap-1 font-semibold transition-colors"
                         >
                             <X size={14} />
                             Limpiar filtros
@@ -263,16 +262,35 @@ export default function SearchPage() {
                     )}
                 </div>
 
-                {/* Results Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {freelancers.map((freelancer) => (
-                        <FreelancerCard key={freelancer.id} {...freelancer} />
-                    ))}
-                </div>
+                {/* Loading State */}
+                {loading && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="bg-card rounded-2xl border border-border p-6 h-60 animate-pulse space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex gap-3 items-center">
+                                        <div className="w-12 h-12 bg-muted rounded-full" />
+                                        <div className="space-y-2">
+                                            <div className="h-4 bg-muted w-24 rounded" />
+                                            <div className="h-3 bg-muted w-16 rounded" />
+                                        </div>
+                                    </div>
+                                    <div className="h-4 bg-muted w-16 rounded" />
+                                </div>
+                                <div className="h-4 bg-muted w-3/4 rounded" />
+                                <div className="h-4 bg-muted w-1/2 rounded" />
+                                <div className="flex gap-2 pt-2">
+                                    <div className="h-6 bg-muted w-12 rounded" />
+                                    <div className="h-6 bg-muted w-12 rounded" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Empty State */}
-                {freelancers.length === 0 && (
-                    <div className="text-center py-16">
+                {!loading && providers.length === 0 && (
+                    <div className="text-center py-16 bg-card rounded-2xl border border-border max-w-xl mx-auto shadow-sm">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                             <Search
                                 className="text-muted-foreground"
@@ -283,20 +301,54 @@ export default function SearchPage() {
                             No encontramos resultados
                         </h3>
                         <p className="text-muted-foreground mb-6">
-                            Intenta ajustar tus filtros o prueba con otras
-                            palabras clave
+                            Intenta ajustar tus filtros o prueba con otras palabras clave
                         </p>
-                        <Button variant="outline" color="primary">
+                        <Button
+                            variant="outline"
+                            color="primary"
+                            onClick={handleClearAllFilters}
+                        >
                             Limpiar filtros
                         </Button>
                     </div>
                 )}
 
-                {/* Load More */}
-                {freelancers.length > 0 && (
+                {/* Results Grid */}
+                {!loading && providers.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {providers.map((p) => {
+                            // Map category backend format to CategoryIcon format
+                            const displayCategory = p.main_category?.toLowerCase() || "tecnologia";
+
+                            return (
+                                <FreelancerCard
+                                    key={p.user_id}
+                                    id={p.user_id}
+                                    name={p.name}
+                                    category={displayCategory}
+                                    hourlyRate={parseInt(p.base_price || "0").toLocaleString("es-CO")}
+                                    skills={p.skills || []}
+                                    isTopTalent={p.profile_completion === 100}
+                                    bio={p.bio || "Sin biografía profesional aún."}
+                                    servicesCompleted={p.services_done || 0}
+                                />
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Load More Button */}
+                {!loading && hasMore && (
                     <div className="text-center mt-12">
-                        <Button variant="outline" color="primary" size="lg">
-                            Cargar más profesionales
+                        <Button
+                            variant="outline"
+                            color="primary"
+                            size="lg"
+                            onClick={handleLoadMore}
+                            disabled={loadingMore}
+                            className="min-w-[200px]"
+                        >
+                            {loadingMore ? "Cargando..." : "Cargar más profesionales"}
                         </Button>
                     </div>
                 )}
@@ -308,19 +360,6 @@ export default function SearchPage() {
                 onClose={() => setIsFilterModalOpen(false)}
                 onApply={handleApplyFilters}
             />
-
-            {/* Floating Action Button - Mobile Only */}
-            <button
-                onClick={() => setIsFilterModalOpen(true)}
-                className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-secondary text-secondary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-secondary/80 transition-all z-40"
-            >
-                <SlidersHorizontal size={24} />
-                {(advancedFilters.priceMin ||
-                    advancedFilters.priceMax ||
-                    advancedFilters.modality.length > 0) && (
-                    <span className="absolute top-1 right-1 w-3 h-3 bg-white rounded-full border-2 border-secondary" />
-                )}
-            </button>
         </div>
     );
 }

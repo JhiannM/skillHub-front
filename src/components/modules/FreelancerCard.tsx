@@ -1,28 +1,27 @@
 import React from "react";
+import Link from "next/link";
 import { Card, CardBody } from "../ui/Card";
 import { CategoryType } from "../ui/CategoryIcon";
-import { Star, MapPin, BadgeCheck } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { Button } from "../ui/Button";
 
 export interface FreelancerCardProps {
     id: string;
     name: string;
-    location: string;
+    location?: string;
     category: CategoryType;
-    rating: number;
-    reviews: number;
+    rating?: number;
+    reviews?: number;
     servicesCompleted: number;
     hourlyRate: string;
     skills: string[];
-    isTopTalent: boolean;
+    isTopTalent?: boolean;
     bio: string;
 }
 
 export function FreelancerCard({
+    id,
     name,
-    location,
-    rating,
-    reviews,
     hourlyRate,
     skills,
     isTopTalent,
@@ -46,9 +45,6 @@ export function FreelancerCard({
                                     />
                                 )}
                             </h3>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                <MapPin size={12} /> {location}
-                            </p>
                         </div>
                     </div>
                     <div className="text-right">
@@ -57,19 +53,6 @@ export function FreelancerCard({
                         </p>
                         <p className="text-xs text-muted-foreground">/ hora</p>
                     </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm">
-                    <Star
-                        size={16}
-                        className="text-yellow-500 fill-yellow-500"
-                    />
-                    <span className="font-medium text-foreground">
-                        {rating}
-                    </span>
-                    <span className="text-muted-foreground">
-                        ({reviews} reseñas)
-                    </span>
                 </div>
 
                 <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
@@ -92,13 +75,12 @@ export function FreelancerCard({
                     )}
                 </div>
             </CardBody>
-            <div className="p-4 border-t border-border flex gap-2">
-                <Button variant="outline" color="primary" fullWidth size="sm">
-                    Ver perfil
-                </Button>
-                <Button variant="solid" color="primary" fullWidth size="sm">
-                    Contactar
-                </Button>
+            <div className="p-4 border-t border-border">
+                <Link href={`/profile/${id}`} className="w-full">
+                    <Button variant="outline" color="primary" fullWidth size="sm">
+                        Ver perfil
+                    </Button>
+                </Link>
             </div>
         </Card>
     );

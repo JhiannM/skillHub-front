@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
         "/settings",
         "/messages",
         "/my-services",
-        "/profile/me",
+        "/profile",
     ];
 
     // Rutas exclusivas para usuarios no autenticados (invitados)
