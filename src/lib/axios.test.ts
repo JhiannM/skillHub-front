@@ -42,7 +42,7 @@ describe("axios api instance", () => {
     });
 
     it("should inject authorization header if token exists in cookies", async () => {
-        vi.mocked(Cookies.get).mockReturnValue("fake-jwt-token");
+        (vi.mocked(Cookies.get) as any).mockReturnValue("fake-jwt-token");
 
         // Get the request interceptor handler
         const requestInterceptor = (api.interceptors.request as any).handlers[0];
@@ -56,7 +56,7 @@ describe("axios api instance", () => {
     });
 
     it("should not inject authorization header if token does not exist in cookies", async () => {
-        vi.mocked(Cookies.get).mockReturnValue(undefined);
+        (vi.mocked(Cookies.get) as any).mockReturnValue(undefined);
 
         const requestInterceptor = (api.interceptors.request as any).handlers[0];
         const config = {

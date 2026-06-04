@@ -60,7 +60,7 @@ describe("UserContext", () => {
     });
 
     it("should recover session on mount if cookies and localStorage are present", async () => {
-        vi.mocked(Cookies.get).mockReturnValue("stored-token");
+        (vi.mocked(Cookies.get) as any).mockReturnValue("stored-token");
         localStorage.setItem("token", "stored-token");
         const userData: User = { id: "2", name: "Alex", email: "alex@example.com" };
         localStorage.setItem("user", JSON.stringify(userData));
